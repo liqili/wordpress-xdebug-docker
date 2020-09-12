@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: mysqldb
+    ports:
+      - "3306:3306"
+    command: --max_allowed_packet=1073741824 --sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_DATABASE: log
+    volumes:
+      - ./configs/db/:/docker-entrypoint-initdb.d # mysql will execute the initial sql script under the mount point one by one
+      - db-data:/var/lib/mysql
+  wordpress-app:
+    build:
+      ./configs/php/
+    container_name: wordpress-app
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+    environment:
+      XDEBUG_CONFIG: "remote_host=host.docker.internal" #This config works for MacOS, otherwise should be ip address of the host machine because docker container cannot find the host by localhost.
+    volumes:
+      - ../local-wordpress:/var/www/html # mount your local wordpress site here
+      - /tmp/wp-errors.log:/tmp/wp-errors.log
+    depends_on:
+      - mysql
+
+volumes:
+  db-data:
